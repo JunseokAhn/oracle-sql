@@ -85,20 +85,38 @@
 --where last_name like 'S%' or last_name like '%s' --+조인문
 --
 ----9
---걍 싹 조인
---
-----10
+--SELECT
+--    EM.FIRST_NAME || ' ' || EM.LAST_NAME 이름, EM2.FIRST_NAME || ' ' || EM2.LAST_NAME 상사
+--FROM 
+--    EMPLOYEES EM, EMPLOYEES EM2
+--WHERE 
+--    EM.MANAGER_ID = EM2.EMPLOYEE_ID(+) --null값 출력
 
---select em1.first_name,em1.last_name,em2.first_name          --같은 테이블도 가능.
---from employees em1,employees em2
---WHERE em1.manager_id = em2.employee_id (+)                 --중요
---
 
+SELECT
+    EM.FIRST_NAME || ' ' || EM.LAST_NAME 이름, 
+    NVL(EM2.FIRST_NAME || EM2.LAST_NAME, 'NULL') 상사
+FROM
+    EMPLOYEES EM, EMPLOYEES EM2
+WHERE
+    EM.MANAGER_ID =EM2.EMPLOYEE_ID(+)
+    
+    
 --select NVL(department_name,'Staff'),last_name,salary            --널이 나올수 있는곳에 저거 하고
 --from employees,departments
 --where employees.department_id = departments.department_id(+)        --부족한 부분에 추가
 
-select last_name,first_name,NVL(commission_pct*salary,'0') from employees
-order by commission_pct
- 
+--select last_name,first_name,NVL(commission_pct*salary,'0') from employees
+--order by commission_pct
+
+ --SELECT 
+--    JOB_ID, AVG(SALARY), MIN(SALARY), MAX(SALARY)
+--FROM
+--    EMPLOYEES --EMPLOYEES들중
+--WHERE
+--    SALARY>=5000    --SALARY가 5000이상인 사람들을
+--GROUP BY
+--    JOB_ID  --JOB_ID를 기준으로 그룹화해서
+--HAVING
+--    AVG(SALARY)>=7000    --그 그룹중 SALARY의 평균이 7000인 그룹만 불러온다
 
