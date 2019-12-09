@@ -130,6 +130,141 @@ group by department_name
 having avg(salary) between 
 (select avg(salary) from employees join departments using(department_id) where department_name = 'IT' group by department_id) 
 and 
-(select avg(salary) from employees join departments using(department_id) where department_name = 'Sales' group by department_id)
+(select avg(salary) from employees join departments using(department_id) where department_name = 'Sales' group by department_id);
       
-        
+--16. 각 부서별로 직원이 한명만 있는 부서만 조회하시오. 
+--    단, 직원이 없는 부서에 대해서는 ‘<신생부서>’라는 문자열이 출력되도록 하고,
+--    출력결과는 다음과 같이 부서명이 내림차순 으로 정렬되어야한다. 
+
+select nvl(department_name, '<신생부서>') 부서명, count(*)
+from employees right join departments using (department_id)
+group by department_name
+having count(*)  <=1
+order by 부서명 desc;
+
+
+
+--17. 부서별 입사월별 직원수를 출력하시오. 
+--    단, 직원수가 5명 이상인 부서만 출력되어야 하며 출력결과는 부서이름 순으로 한다.
+select department_name 부서, to_char(hire_date, 'MON', 'NLS_DATE_LANGUAGE=ENGLISH') 입사월, count(*) 직원수
+from employees left join departments using(department_id)
+group by department_name, to_char(hire_date, 'MON', 'NLS_DATE_LANGUAGE=ENGLISH')
+having count(*) >=5
+order by  부서 asc;
+
+--18. 국가(country_name) 별 도시(city)별 직원수를 조회하시오. 
+--    단, 부서에 속해있지 않은 직원 이 있기 때문에 106명의 직원만 출력이 된다. 
+--    부서정보가 없는 직원은 국가명과 도시명 대신에 ‘<부서없음>’이 출력되도록 하여 107명 모두 출력되게 한다.
+select nvl(country_name, '<부서없음>') 국가, nvl(city, '<부서없음>') 도시, count(*) 직원수
+from employees left join departments using (department_id) left join locations using(location_id) left join countries using(country_id)
+group by country_name, city;
+
+--19. 각 부서별 최대 급여자의 아이디(employee_id), 이름(first_name), 급여(salary)를 출력하시오. 
+--    단, 최대 급여자가 속한 부서의 평균급여를 마지막으로 출력하여 평균급여와 비교할 수 있게 할 것.
+select E.employee_id 아이디, E.first_name 이름, E.salary 급여, A.AVG 부서평균
+from employees E, (
+    select department_id, round(avg(salary),0) AVG, max(salary) MAX
+    from employees E join departments D using(department_id)
+    group by department_id
+    )A
+where E.salary=A.MAX and E.department_id = A.department_id;
+
+--20. 커미션(commission_pct)별 직원수를 조회하시오. 
+--    커미션은 아래실행결과처럼 0.2, 0.25는 모두 .2로, 0.3, 0.35는 .3 형태로 출력되어야 한다. 
+--    단, 커미션 정보가 없는 직원들도 있는 데 커미션이 없는 직원 그룹은 ‘<커미션 없음>’이 출력되게 한다.
+select NVL(to_char(trunc(commission_pct,1)),'<커미션 없음>')commission_pct, count(*)
+from employees
+group by commission_pct;
+
+--21. 커미션(commission_pct)을 가장 많이 받은 상위 4명의 부서명(department_name), 
+--    직원명 (first_name), 급여(salary), 커미션(commission_pct) 정보를 조회하시오. 
+--    출력결과는 커미션 을 많이 받는 순서로 출력하되 동일한 커미션에 대해서는 급여가 높은 직원이 먼저 출력
+select *
+from
+(select department_name 부서명, first_name 직원명, salary 급여, max(commission_pct) 커미션
+from employees join departments using(department_id)
+where commission_pct is not null
+group by department_name, first_name, salary
+order by 커미션 desc)
+where rownum<=4;
+
+--22. 연봉이 12000 이상되는 직원들의 LAST_NAME 및 연봉을 조회한다.
+select last_name 이름, salary*12*commission_pct 연봉
+from employees
+where salary*12*commission_pct>=12000;
+
+ --23. 사원번호가 176 인 사람의 LAST_NAME 과 부서 번호를 조회한다.
+select last_name, department_id
+from employees join departments using(department_id)
+where employee_id = 176;
+
+ --24. 연봉이 5000 에서 12000의 범위 이외인 사람들의 LAST_NAME 및 연봉을 조회힌다.
+select last_name, salary*12*commission_pct 연봉
+from employees
+where salary*12*commission_pct between 5000 and 12000;
+
+--25. LAST_NAME 이 'Kochhar' 인 사원과 동일한 연봉 및 커미션을 버는 사원들의 
+--LAST_NAME, 부서 번호 및 연봉을 조회한다.
+select Last_name, department_name, salary
+from employees join departments using (department_id)
+where (salary, nvl(commission_pct,0)) in (
+        select salary, nvl(commission_pct,0)
+        from employees
+        where last_name = 'Kochhar')
+    and
+    last_name !='Kochhar';
+    
+-- 26. 기존의 직업을 여전히 가지고 있는 사원들의 사번 및 JOB_ID 를 조회한다.
+select employee_id 사번, job_id
+from employees
+where  
+    employee_id not in (select employee_id from job_history);
+
+--27 부서가 있는 국가 ID 및 국가 이름을 조회힌다.(NOT EXISTS 사용)
+select country_id, country_name, department_name
+from departments join locations using(location_id) join countries using(country_id);
+
+
+--28 위치 ID 가 1700 인 사원들의 연봉과 커미션이 동일한 사원들의 
+--LAST_NAME, 부서 번호 및 연봉을 조회한다.
+select last_name, department_name, salary*12*nvl(commission_pct,1) 연봉
+from employees join departments using(department_id)
+where (salary, nvl(commission_pct,0)) in
+(select salary, nvl(commission_pct,0)
+from employees join departments using(department_id)
+where location_id = 1700);
+
+
+--29 도시 이름이 T 로 시작하는 지역에 사는 사원들의 사번, LAST_NAME 및 부서 번호를 조회한다.
+select employee_id 사번, last_name, department_name
+from employees join departments using(department_id) join locations using(location_id)
+where city like 'T%';
+
+-- 30  각 부서별 평균 연봉보다 더 받는 동일부서 근무사원들의
+--      LAST_NAME, 연봉, 부서번호 및 해당 부서의 평균 연봉을 조회한다.
+--      결과는 부서별 연봉을 기준으로 정렬한다.
+select last_name, salary*nvl(commission_pct,1)*12 연봉, department_name 부서, A.AVG 부서평균
+from employees join departments using(department_id) 
+    join
+    (
+        select round(avg(salary),2) AVG, department_id
+        from employees join departments using(department_id)
+        group by department_id
+    ) A 
+    using(department_id)
+where salary > a.avg 
+order by 연봉 desc;
+
+select last_name, salary*nvl(commission_pct,1)*12 연봉, department_name 부서, A.AVG 부서평균
+from (employees join departments using(department_id)) b,
+    
+    (
+        select round(avg(salary),2) AVG, department_id
+        from employees join departments using(department_id)
+        group by department_id
+    ) A 
+   
+where salary > a.avg and a.department_id = b.department_id
+order by 연봉 desc;
+
+
